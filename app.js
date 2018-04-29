@@ -13,6 +13,11 @@ app.use(methodOverride("_method"));
 app.use(express.static("public"));
 app.set("view engine","ejs");
 
+app.use(function(req, res, next){
+    res.locals.isLoggedIn = isLoggedIn;
+    next();
+});
+
 // Mongoose config
 var blogSchema = new mongoose.Schema({
     title: String,
@@ -22,6 +27,8 @@ var blogSchema = new mongoose.Schema({
 });
 
 var Blog = mongoose.model("Blog", blogSchema);
+
+var isLoggedIn = false;
 
 // blog.create({
 //     title: "Sunrise",
@@ -74,7 +81,7 @@ app.get("/blogs/:id", (req, res)=>{
 });
 
 // EDIT ROUTE
-app.get("/blogs/:id/edit", (req, res)=>{
+app.get("/blogs/:id/edit", LoggedIn, (req, res)=>{
     Blog.findById(req.params.id, (err, blog)=>{
         if(err)
             res.redirect("/show/"+req.params.id);
@@ -85,7 +92,7 @@ app.get("/blogs/:id/edit", (req, res)=>{
 });
 
 // UPDATE ROUTE
-app.put("/blogs/:id", (req, res)=>{
+app.put("/blogs/:id", LoggedIn, (req, res)=>{
     req.body.blog.body = req.sanitize(req.body.blog.body);
     Blog.findByIdAndUpdate(req.params.id, req.body.blog, (err, blog)=>{
         if(err)
@@ -97,7 +104,7 @@ app.put("/blogs/:id", (req, res)=>{
 });
 
 // DELETE ROUTE
-app.delete("/blogs/:id", (req, res)=>{
+app.delete("/blogs/:id", LoggedIn, (req, res)=>{
     Blog.findByIdAndRemove(req.params.id, (err)=>{
         if(err)
             res.redirect("/blogs/"+req.params.id);
@@ -111,20 +118,32 @@ app.get("/admin", (req, res)=>{
     res.render("login");
 });
 
-app.post("/", (req, res)=>{
+app.post("/login", (req, res)=>{
     // console.log("==============================");
     // console.log(req.body);
     if(req.body.email === "nitish" && req.body.pass === "password"){
+        isLoggedIn = true;
         res.redirect("/blogs");
     }
     else
         res.redirect("back");
 });
 
+app.post("/logout", (req, res)=>{
+    isLoggedIn = false;
+    res.redirect("/blogs");
+});
+
 
 //For non-existing ROUTES
 app.get("*", (req, res)=>res.send("Page Not Found."));
 app.post("*", (req, res)=>res.send("Page Not Found"));
+
+function LoggedIn(req, res, next){
+    if(isLoggedIn)
+        return next();
+    return res.redirect("back");
+}
 
 // Listen to a PORT
 app.listen(process.env.PORT, process.env.IP, ()=>{
