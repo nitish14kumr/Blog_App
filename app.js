@@ -6,7 +6,9 @@ var expressSanitizer= require("express-sanitizer"),
     app             = express();
     
 // APP config
-mongoose.connect("mongodb://localhost/blog_app");
+var dburl = process.env.DATABASEURL || "mongodb://localhost/yelp_camp";
+
+mongoose.connect(dburl);
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(expressSanitizer());
 app.use(methodOverride("_method"));
